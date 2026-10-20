@@ -378,26 +378,57 @@
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 12px 16px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
     }
-    .log-panel summary {
-      cursor: pointer;
-      font-size: 0.8rem;
-      color: var(--muted);
-      font-weight: 600;
-      user-select: none;
+    .log-panel.open {
+      display: flex;
+    }
+    .log-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .log-toolbar-title {
+      font-size: 0.82rem;
+      color: var(--text);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
     }
     #logBox {
-      margin-top: 10px;
       background: #090c10;
       border: 1px solid var(--border);
       border-radius: 8px;
-      padding: 10px;
-      height: 150px;
+      padding: 10px 12px;
+      height: 210px;
       overflow-y: auto;
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-      font-size: 0.75rem;
-      color: #94a3b8;
+      font-size: 0.76rem;
+      line-height: 1.5;
+      color: #cbd5e1;
       white-space: pre-wrap;
+    }
+    .log-line { display: block; }
+    .log-ts { color: #64748b; }
+    .log-tag-INFO { color: #38bdf8; font-weight: 700; }
+    .log-tag-OK { color: #22c55e; font-weight: 700; }
+    .log-tag-WARN { color: #f59e0b; font-weight: 700; }
+    .log-tag-ERROR { color: #ef4444; font-weight: 700; }
+    .log-tag-TX { color: #a78bfa; font-weight: 700; }
+    .log-tag-RX { color: #34d399; font-weight: 700; }
+    .debug-badge {
+      background: var(--danger);
+      color: #fff;
+      border-radius: 999px;
+      padding: 1px 6px;
+      font-size: 0.68rem;
+      font-weight: 800;
+      display: none;
     }
     .hint-banner {
       font-size: 0.78rem;
@@ -448,6 +479,9 @@
       </button>
       <button id="btnSyncNames" onclick="syncNamesFromPedal()" disabled title="Ler os nomes dos 160 presets, AMPs, CABs e DS da memória do pedal">
         📥 Sincronizar Nomes
+      </button>
+      <button id="btnDebugToggle" onclick="toggleDebugPanel()" title="Mostrar/ocultar console de Debug">
+        🐞 Debug <span id="debugErrBadge" class="debug-badge">0</span>
       </button>
     </div>
   </header>
@@ -523,11 +557,23 @@
     <div id="paramsGrid" class="params-grid"></div>
   </section>
 
-  <!-- PROTOCOL LOG -->
-  <details class="log-panel">
-    <summary>Console de Protocolo BLE AE40 (TX / RX)</summary>
+  <!-- PROTOCOL & DIAGNOSTIC DEBUG CONSOLE -->
+  <section id="debugPanel" class="log-panel open">
+    <div class="log-toolbar">
+      <div class="log-toolbar-title">
+        <span>🐞 Console de Debug (USB MIDI / Web Bluetooth / Ponte Local / Pacotes AE40)</span>
+      </div>
+      <div style="display:flex; gap:6px; align-items:center;">
+        <label style="font-size:0.75rem; color:var(--muted); display:inline-flex; align-items:center; gap:4px; cursor:pointer;">
+          <input id="chkShowHex" type="checkbox" checked /> Mostrar pacotes TX/RX (Hex)
+        </label>
+        <button onclick="runDiagnostics()" style="padding:4px 9px; font-size:0.75rem;">🔍 Diagnosticar USB/BLE</button>
+        <button onclick="copyDebugLog()" style="padding:4px 9px; font-size:0.75rem;">📋 Copiar</button>
+        <button onclick="clearDebugLog()" style="padding:4px 9px; font-size:0.75rem;">🗑️ Limpar</button>
+      </div>
+    </div>
     <div id="logBox"></div>
-  </details>
+  </section>
 
   <footer style="text-align:center; font-size:0.78rem; color:var(--muted); padding:6px 0;">
     Projeto open-source <a href="https://github.com/rafaelsupport/mk300ctl" target="_blank" style="color:var(--accent); text-decoration:none;">mk300ctl</a> •
@@ -718,11 +764,109 @@ function initDemoPatch() {
   [55, 70, 50, 60, 65, 50, 55, 0].forEach((v, idx) => dv.setInt16(ampBase + idx * 2, v, true));
 }
 
-function logMsg(msg) {
+let debugErrCount = 0;
+
+function logMsg(msg, level = "INFO") {
+  if ((level === "TX" || level === "RX") && document.getElementById("chkShowHex") && !document.getElementById("chkShowHex").checked) {
+    return;
+  }
   const box = document.getElementById("logBox");
-  const t = new Date().toLocaleTimeString();
-  box.textContent += `[${t}] ${msg}\n`;
+  const now = new Date();
+  const t = now.toTimeString().slice(0, 8);
+  const line = document.createElement("div");
+  line.className = "log-line";
+
+  const tsSpan = document.createElement("span");
+  tsSpan.className = "log-ts";
+  tsSpan.textContent = t;
+
+  const tagSpan = document.createElement("span");
+  tagSpan.className = `log-tag-${level}`;
+  tagSpan.textContent = `[${level}]`;
+
+  const txtNode = document.createTextNode(` ${msg}`);
+  line.appendChild(tsSpan);
+  line.appendChild(tagSpan);
+  line.appendChild(txtNode);
+  box.appendChild(line);
   box.scrollTop = box.scrollHeight;
+
+  if (level === "ERROR") {
+    debugErrCount++;
+    const badge = document.getElementById("debugErrBadge");
+    if (badge) {
+      badge.textContent = String(debugErrCount);
+      badge.style.display = "inline-block";
+    }
+  }
+}
+
+function toggleDebugPanel() {
+  const panel = document.getElementById("debugPanel");
+  panel.classList.toggle("open");
+  if (panel.classList.contains("open")) {
+    debugErrCount = 0;
+    const badge = document.getElementById("debugErrBadge");
+    if (badge) badge.style.display = "none";
+  }
+}
+
+function clearDebugLog() {
+  document.getElementById("logBox").innerHTML = "";
+  debugErrCount = 0;
+  const badge = document.getElementById("debugErrBadge");
+  if (badge) badge.style.display = "none";
+  logMsg("Log limpo.", "INFO");
+}
+
+async function copyDebugLog() {
+  const txt = Array.from(document.getElementById("logBox").children).map(el => el.textContent).join("\n");
+  try {
+    await navigator.clipboard.writeText(txt);
+    logMsg("Log copiado para a área de transferência!", "OK");
+  } catch (e) {
+    logMsg(`Falha ao copiar log: ${e.message}`, "WARN");
+  }
+}
+
+async function runDiagnostics() {
+  logMsg(`Navegador detectado: ${navigator.userAgent}`, "INFO");
+  logMsg("Searching for USB MIDI devices (WebMIDI)...", "INFO");
+  if (navigator.requestMIDIAccess) {
+    try {
+      const midi = await navigator.requestMIDIAccess({ sysex: true });
+      const inputs = Array.from(midi.inputs.values()).map(i => i.name);
+      const outputs = Array.from(midi.outputs.values()).map(o => o.name);
+      if (inputs.length || outputs.length) {
+        logMsg(`Dispositivos MIDI encontrados — IN: [${inputs.join(", ")}] | OUT: [${outputs.join(", ")}]`, "OK");
+      } else {
+        logMsg("WebMIDI ativo, mas nenhuma pedaleira USB MIDI conectada no momento.", "WARN");
+      }
+    } catch (e) {
+      logMsg(`USB detection error: ${e.message}. Falling back to BLE.`, "ERROR");
+    }
+  } else {
+    logMsg("WebMIDI API não disponível neste navegador.", "WARN");
+  }
+
+  if (navigator.bluetooth && typeof navigator.bluetooth.requestDevice === "function") {
+    logMsg("Web Bluetooth API disponível (navigator.bluetooth pronto para conexão BLE direta).", "OK");
+  } else {
+    logMsg("Web Bluetooth indisponível: navigator.bluetooth is undefined (Firefox não suporta Web Bluetooth; no Chrome Linux ative chrome://flags/#enable-experimental-web-platform-features ou use a Ponte Local ./mk300_web.py).", "ERROR");
+  }
+
+  try {
+    const ping = await fetch("/api/ping");
+    if (ping.ok) {
+      const info = await ping.json();
+      document.getElementById("btnLocalBridge").style.display = "inline-flex";
+      logMsg(`Ponte Local Python (./mk300_web.py) ativa! MAC alvo: ${info.mac}`, "OK");
+    } else {
+      logMsg("Ponte Local (./mk300_web.py) não detectada (rodando como página estática / GitHub Pages).", "INFO");
+    }
+  } catch (_) {
+    logMsg("Ponte Local (./mk300_web.py) não detectada (rodando como página estática / GitHub Pages).", "INFO");
+  }
 }
 
 function toHex(u8, max = 48) {
@@ -782,7 +926,7 @@ function onBleNotify(event) {
 function xferWebBle(pkt, minlen) {
   const run = async () => {
     rxChunks = [];
-    logMsg(`TX ${toHex(pkt)}`);
+    logMsg(toHex(pkt), "TX");
     const waitPromise = new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         rxWaiters = rxWaiters.filter(w => w.resolve !== resolve);
@@ -798,7 +942,7 @@ function xferWebBle(pkt, minlen) {
     });
     await bleWriteChar.writeValueWithoutResponse(pkt);
     const resp = await waitPromise;
-    logMsg(`RX ${toHex(resp)}`);
+    logMsg(toHex(resp), "RX");
     return resp;
   };
   txQueue = txQueue.then(run, run);
@@ -867,12 +1011,13 @@ async function pedalWrite(addr, bytes, typ = TYPE_MEM) {
 // Conexão Web Bluetooth e Ponte Local
 // ============================================================================
 async function connectWebBluetooth() {
-  if (!navigator.bluetooth) {
-    alert("Seu navegador não expõe a Web Bluetooth API.\n\nUse Chrome, Brave ou Edge (em chrome://flags/#enable-experimental-web-platform-features no Linux), ou rode ./mk300_web.py para usar a Ponte Local.");
+  logMsg("Searching for the MK-300 via Web Bluetooth...", "INFO");
+  if (!navigator.bluetooth || typeof navigator.bluetooth.requestDevice !== "function") {
+    logMsg('Connection error: can\'t access property "requestDevice", navigator.bluetooth is undefined', "ERROR");
+    alert("Seu navegador não expõe a Web Bluetooth API (ex: Firefox).\n\nUse Chrome, Brave ou Edge (em chrome://flags/#enable-experimental-web-platform-features no Linux), ou rode ./mk300_web.py para usar a Ponte Local.");
     return;
   }
   try {
-    logMsg("Procurando MK-300 via Web Bluetooth...");
     bleDevice = await navigator.bluetooth.requestDevice({
       filters: [
         { services: [SERVICE_AE40] },
@@ -883,8 +1028,9 @@ async function connectWebBluetooth() {
       optionalServices: [SERVICE_AE40, SERVICE_MIDI]
     });
     bleDevice.addEventListener("gattserverdisconnected", onDisconnected);
-    logMsg(`Conectando a ${bleDevice.name || bleDevice.id}...`);
+    logMsg(`Conectando ao GATT Server de ${bleDevice.name || bleDevice.id}...`, "INFO");
     const server = await bleDevice.gatt.connect();
+    logMsg(`Obtendo serviço primário AE40 (${SERVICE_AE40})...`, "INFO");
     const service = await server.getPrimaryService(SERVICE_AE40);
     bleWriteChar = await service.getCharacteristic(CHAR_WR);
     bleNotifyChar = await service.getCharacteristic(CHAR_NT);
@@ -892,13 +1038,15 @@ async function connectWebBluetooth() {
     bleNotifyChar.addEventListener("characteristicvaluechanged", onBleNotify);
 
     connMode = "webble";
+    logMsg("Enviando Handshake AE40 (cmd 0x11)...", "INFO");
     const hs = await xferWebBle(buildFrame(0x11), 7);
     const len = hs[3] | (hs[4] << 8) | (hs[5] << 16);
     const model = new TextDecoder().decode(hs.slice(6, 6 + len)).split("\0")[0];
+    logMsg(`Handshake concluído! Modelo identificado: ${model}`, "OK");
     setConnectedUI(`Conectado via Web BLE (${model})`);
     await refreshFromPedal();
   } catch (err) {
-    logMsg(`Erro Web Bluetooth: ${err.message}`);
+    logMsg(`Connection error (Web Bluetooth): ${err.message}`, "ERROR");
     alert(`Não foi possível conectar via Web Bluetooth:\n${err.message}`);
   }
 }
@@ -906,16 +1054,17 @@ async function connectWebBluetooth() {
 async function connectLocalBridge() {
   try {
     setStatusText("Conectando via Ponte Local (Bleak)...");
-    logMsg("Solicitando conexão BLE ao servidor Python local...");
+    logMsg("Solicitando conexão BLE ao servidor Python local (./mk300_web.py)...", "INFO");
     const r = await fetch("/api/connect", { method: "POST" });
     const j = await r.json();
     if (!r.ok) throw new Error(j.error || "Falha ao conectar");
     connMode = "bridge";
+    logMsg(`Conectado via Ponte Local Bleak! Modelo: ${j.model}`, "OK");
     setConnectedUI(`Conectado via Bleak (${j.model})`);
     await refreshFromPedal();
   } catch (err) {
     setStatusText("Desconectado (Modo Demo)");
-    logMsg(`Erro Ponte Local: ${err.message}`);
+    logMsg(`Connection error (Ponte Local): ${err.message}`, "ERROR");
     alert(`Falha ao conectar à MK-300 via Ponte Local:\n${err.message}`);
   }
 }
@@ -937,7 +1086,7 @@ function onDisconnected() {
   document.getElementById("btnDisconnect").style.display = "none";
   document.getElementById("btnRefresh").disabled = true;
   document.getElementById("btnSyncNames").disabled = true;
-  logMsg("Desconectado da MK-300.");
+  logMsg("Desconectado da MK-300.", "WARN");
 }
 
 function setStatusText(txt) {
@@ -964,9 +1113,9 @@ async function refreshFromPedal() {
     const buf = await pedalRead(ADDR_BUF, PATCH_SIZE);
     patchBuf.set(buf);
     renderAll();
-    logMsg(`Preset [${String(currentPresetIdx + 1).padStart(3, "0")}] carregado (${PATCH_SIZE} bytes).`);
+    logMsg(`Preset [${String(currentPresetIdx + 1).padStart(3, "0")}] "${getPatchName()}" carregado (${PATCH_SIZE} bytes).`, "OK");
   } catch (err) {
-    logMsg(`Erro ao atualizar: ${err.message}`);
+    logMsg(`Erro ao atualizar buffer do pedal: ${err.message}`, "ERROR");
   }
 }
 
@@ -984,19 +1133,23 @@ async function syncNamesFromPedal() {
       }
       return out;
     };
+    logMsg("Lendo nomes dos 160 presets (0x70200000)...", "INFO");
     btn.textContent = "⏳ Lendo Presets...";
     presetNames = decodeList(await pedalRead(ADDR_PRESET_NAMES, 160 * 17, TYPE_MEM), 17);
+    logMsg("Lendo nomes dos 100 CABs (0x80000000)...", "INFO");
     btn.textContent = "⏳ Lendo CABs...";
     customTypes.CAB = decodeList(await pedalRead(0x80000000, 100 * 14, TYPE_RES), 14);
+    logMsg("Lendo nomes dos 120 AMPs (0x90000000)...", "INFO");
     btn.textContent = "⏳ Lendo AMPs...";
     customTypes.AMP = decodeList(await pedalRead(0x90000000, 120 * 14, TYPE_RES), 14);
+    logMsg("Lendo nomes dos 40 DS (0xA0000000)...", "INFO");
     btn.textContent = "⏳ Lendo DS...";
     customTypes.DS = decodeList(await pedalRead(0xA0000000, 40 * 14, TYPE_RES), 14);
     populatePresetDropdown();
     renderAll();
-    logMsg("Nomes sincronizados da memória da pedaleira com sucesso!");
+    logMsg("Nomes sincronizados da memória da pedaleira com sucesso!", "OK");
   } catch (err) {
-    logMsg(`Erro ao sincronizar nomes: ${err.message}`);
+    logMsg(`Erro ao sincronizar nomes: ${err.message}`, "ERROR");
     alert(`Erro ao sincronizar nomes: ${err.message}`);
   } finally {
     btn.textContent = origText;
@@ -1009,13 +1162,14 @@ async function selectPreset(idx) {
   currentPresetIdx = idx;
   document.getElementById("presetSelect").value = String(idx);
   document.getElementById("presetBadge").textContent = String(idx + 1).padStart(3, "0");
+  logMsg(`Trocando para preset [${String(idx + 1).padStart(3, "0")}] (índice ${idx})...`, "INFO");
   if (connMode !== "none") {
     try {
       await pedalWrite((ADDR_SW + idx) >>> 0, [1]);
       await new Promise(r => setTimeout(r, 650));
       await refreshFromPedal();
     } catch (e) {
-      logMsg(`Erro ao trocar preset: ${e.message}`);
+      logMsg(`Erro ao trocar preset: ${e.message}`, "ERROR");
     }
   } else {
     // Atualiza nome demo no modo offline
@@ -1331,15 +1485,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     }
   } catch (_) {}
 
-  // Verifica se o servidor local mk300_web.py está rodando
-  try {
-    const ping = await fetch("/api/ping");
-    if (ping.ok) {
-      document.getElementById("btnLocalBridge").style.display = "inline-flex";
-      logMsg("Servidor local mk300_web.py detectado! Você pode usar 'Conectar via Ponte Local (Bleak)'.");
-    }
-  } catch (_) {}
-
+  await runDiagnostics();
   populatePresetDropdown();
   renderAll();
 });
