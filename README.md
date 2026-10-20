@@ -16,9 +16,9 @@ Desenvolvido e testado atualmente no **Linux (Ubuntu 26.04.1 LTS)** com firmware
 
 ### Conexão e Plataforma
 - ✅ **Conexão via Bluetooth LE (BLE)** no Linux (testado no Ubuntu 26.04.1 LTS via BlueZ + `bleak`)
+- ✅ **Interface Web no Navegador (`index.html` + `mk300_web.py`)**: funciona via **Web Bluetooth API** (direto no Chrome/Brave/Edge, inclusive pelo GitHub Pages) ou via **Ponte Local (`Bleak`)** em qualquer navegador!
 - ✅ **Liberação automática da conexão BlueZ** (evita que o ALSA BLE-MIDI trave o anúncio do pedal)
 - ⏳ **Conexão via cabo USB** — *em breve*
-- ⏳ **Interface gráfica / TUI interativa** — *em breve*
 
 ### Funcionalidades
 - ✅ **Inspeção do preset atual (`info`)**: nome, número do slot, cor do LED, volume, BPM, Pan e ordem/estado da cadeia de sinal (`Chain`).
@@ -26,12 +26,11 @@ Desenvolvido e testado atualmente no **Linux (Ubuntu 26.04.1 LTS)** com firmware
 - ✅ **Troca de presets (`preset`, `pc`)**: via protocolo AE40 (todos os 160 slots: `0` a `159`) ou via BLE-MIDI Program Change (`0` a `127`).
 - ✅ **Controle de módulos (`on`, `off`, `toggle`)**: liga, desliga ou inverte qualquer um dos 11 módulos da cadeia (`WAH`, `FX`, `GATE`, `DS`, `AMP`, `CAB`, `EQ`, `MOD`, `DLY`, `REV`, `VOL`).
 - ✅ **Edição de parâmetros em tempo real (`param`, `vol`, `bpm`, `pan`)**: altera knobs pelo nome (ex.: `gain`, `mix`, `time`) ou pelo índice numérico (`0` a `11`).
+- ✅ **Editor Web completo (`index.html`)**: troca de modelo/tipo (`effunit`), reordenação da cadeia de sinal (`Chain`), edição de nome e cor do LED do preset, sliders em tempo real e importação/exportação de `.bin` (448 bytes).
 - ✅ **Leitura de nomes da memória do pedal (`names`, `presets`)**: extrai os nomes atuais dos 160 presets, 120 AMPs, 100 CABs e 40 DS diretamente da memória da pedaleira (incluindo IRs/AMPs importados pelo usuário) e salva em cache (`mk300_names.json`).
 - ✅ **Backup binário de preset (`dump`)**: salva os 448 bytes brutos do preset em edição em um arquivo `.bin`.
 - ✅ **Encadeamento de comandos**: executa várias ações em uma única conexão BLE.
-- ⏳ **Troca do modelo/tipo de efeito (`effunit`) de um módulo via CLI** — *em breve*
-- ⏳ **Reordenação da cadeia de sinal (`Chain`) e edição de nome/cor do preset** — *em breve*
-- ⏳ **Importação/restauração de preset (`.bin`) e gravação permanente no slot (Save)** — *em breve*
+- ⏳ **Gravação permanente no slot (Save na Flash)** — *em breve*
 - ⏳ **Mapeamento completo dos nomes de knobs de todos os subtipos de `FX`, `DLY` e `REV`** — *em andamento*
 
 > **Nota:** Assim como no app M-EFCS, alterações feitas no buffer de edição ficam ativas imediatamente no som (o botão `SAVE` da pedaleira começa a piscar), mas só são gravadas permanentemente se você salvar no pedal.
@@ -64,7 +63,24 @@ Ele listará os dispositivos BLE próximos. Caso o MAC da sua unidade seja difer
 
 ---
 
-## Como Usar
+## Interface Web (No Navegador)
+
+> 🌐 **Acesse direto pelo navegador (GitHub Pages):** [**https://rafaelsupport.github.io/mk300ctl/**](https://rafaelsupport.github.io/mk300ctl/)
+
+Inspirada na ideia e abordagem do projeto [**mvave-blackbox-edit**](https://github.com/jvsobrinho/mvave-blackbox-edit) (de [@jvsobrinho](https://github.com/jvsobrinho)), a interface web ([`index.html`](index.html)) permite controlar a MK-300 visualmente pelo navegador com **dois modos de conexão**:
+
+1. **Direto pelo Navegador (Web Bluetooth API / GitHub Pages)**:
+   Sem precisar instalar nada! Basta abrir [**https://rafaelsupport.github.io/mk300ctl/**](https://rafaelsupport.github.io/mk300ctl/) no Chrome, Brave ou Edge (no Linux, ative `chrome://flags/#enable-experimental-web-platform-features`) e clicar em **"Conectar (Web Bluetooth)"**.
+2. **Via Ponte Local (`./mk300_web.py`) — Recomendado no Linux**:
+   Funciona em **qualquer navegador** (Firefox, Chrome, Brave) e libera automaticamente a conexão ociosa do BlueZ/ALSA:
+   ```bash
+   ./mk300_web.py
+   # Abra http://127.0.0.1:8080 no navegador e clique em "Conectar via Ponte Local (Bleak)"
+   ```
+
+---
+
+## Como Usar (Linha de Comando — CLI)
 
 ```bash
 # Sincronizar nomes de presets, AMPs, CABs e DS da memória do pedal (recomendado rodar 1x)
@@ -185,6 +201,8 @@ Como a MK-300 também anuncia o serviço **BLE-MIDI**, o daemon `bluetoothd` (Bl
 
 ```text
 .
+├── index.html         # Interface Web (Web Bluetooth API + Ponte Local + Editor .bin offline)
+├── mk300_web.py       # Servidor HTTP local com ponte BLE via Bleak para o Linux
 ├── mk300ctl.py        # CLI principal de controle da MK-300
 ├── mk300_catalog.py   # Catálogo de efeitos, modelos de fábrica e nomes de parâmetros
 ├── mk300_names.json   # Cache dos nomes de presets/AMP/CAB/DS lidos da pedaleira
@@ -196,3 +214,10 @@ Como a MK-300 também anuncia o serviço **BLE-MIDI**, o daemon `bluetoothd` (Bl
     ├── bindiff.py     # Compara dois dumps (.bin) byte a byte e int16 LE para mapear novos knobs
     └── midi.py        # Monitor e injetor de mensagens BLE-MIDI (Program Change / Control Change)
 ```
+
+---
+
+## Referências e Créditos
+
+- Interface Web no navegador inspirada pelo projeto [**mvave-blackbox-edit**](https://github.com/jvsobrinho/mvave-blackbox-edit) de [**@jvsobrinho**](https://github.com/jvsobrinho), que desenvolveu um editor Web Bluetooth similar para a pedaleira M-Vave Blackbox.
+

@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MK-300 Web Edit — Open Source M-EFCS Alternative</title>
+  <style>
+    :root {
+      --bg: #0d1017;
+      --panel: #151a24;
+      --panel-2: #1c2230;
+      --border: #2a3346;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #38bdf8;
+      --accent-2: #22c55e;
+      --danger: #ef4444;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Ubuntu, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      padding: 16px;
+    }
+    header {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-badge {
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: #fff;
+      font-weight: 800;
+      font-size: 0.95rem;
+      padding: 6px 10px;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+    .brand h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+    .brand p {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .conn-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      padding: 6px 11px;
+      border-radius: 999px;
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #64748b;
+    }
+    .status-pill.connected {
+      color: #dcfce7;
+      border-color: #166534;
+      background: rgba(22, 101, 52, 0.25);
+    }
+    .status-pill.connected .status-dot {
+      background: var(--accent-2);
+      box-shadow: 0 0 8px var(--accent-2);
+    }
+    button, select, input[type="text"], input[type="number"] {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 7px 12px;
+      font-size: 0.85rem;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    button:hover:not(:disabled) {
+      border-color: var(--accent);
+      background: #232b3d;
+    }
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    button.primary {
+      background: #0284c7;
+      border-color: #38bdf8;
+      color: #fff;
+    }
+    button.primary:hover:not(:disabled) {
+      background: #0369a1;
+    }
+    button.BridgeBtn {
+      background: #15803d;
+      border-color: #22c55e;
+      color: #fff;
+    }
+    button.BridgeBtn:hover:not(:disabled) {
+      background: #166534;
+    }
+    button.danger {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: var(--danger);
+      color: #fca5a5;
+    }
+
+    /* Top Preset Bar */
+    .preset-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      align-items: center;
+    }
+    .preset-selector-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .preset-num-badge {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 1.35rem;
+      font-weight: 800;
+      padding: 8px 12px;
+      border-radius: 8px;
+      background: #090c10;
+      border: 2px solid var(--accent);
+      color: var(--accent);
+      min-width: 68px;
+      text-align: center;
+    }
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .field-group label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: var(--muted);
+      font-weight: 600;
+      display: flex;
+      justify-content: space-between;
+    }
+    .global-knobs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+
+    /* Signal Chain */
+    .chain-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .panel-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.7px;
+      color: var(--muted);
+    }
+    .chain-strip {
+      display: grid;
+      grid-template-columns: repeat(11, minmax(84px, 1fr));
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .pedal-block {
+      background: #10141d;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.12s ease, border-color 0.12s ease, box-shadow 0.12s ease;
+      position: relative;
+    }
+    .pedal-block:hover {
+      transform: translateY(-2px);
+    }
+    .pedal-block.selected {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.25);
+      background: #172030;
+    }
+    .pedal-led {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #334155;
+      transition: all 0.15s;
+    }
+    .pedal-block.enabled .pedal-led {
+      background: #ef4444;
+      box-shadow: 0 0 8px #ef4444;
+    }
+    .pedal-name {
+      font-weight: 800;
+      font-size: 0.9rem;
+      letter-spacing: 0.5px;
+    }
+    .pedal-model {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .pedal-toggle-btn {
+      width: 100%;
+      padding: 4px 0;
+      font-size: 0.72rem;
+      border-radius: 6px;
+      justify-content: center;
+      background: #1e293b;
+      color: var(--muted);
+      border: 1px solid #334155;
+    }
+    .pedal-block.enabled .pedal-toggle-btn {
+      background: rgba(34, 197, 94, 0.18);
+      border-color: #22c55e;
+      color: #86efac;
+    }
+    .chain-move {
+      display: flex;
+      gap: 4px;
+      width: 100%;
+    }
+    .chain-move button {
+      flex: 1;
+      padding: 2px 0;
+      font-size: 0.68rem;
+      justify-content: center;
+    }
+
+    /* Module Parameters Editor */
+    .editor-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .module-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .module-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .module-badge {
+      font-size: 1.05rem;
+      font-weight: 800;
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: var(--panel-2);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+    }
+    .params-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 14px;
+    }
+    .param-card {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .param-card.unused {
+      opacity: 0.55;
+    }
+    .param-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .param-idx {
+      font-size: 0.7rem;
+      color: var(--muted);
+      font-family: monospace;
+    }
+    .param-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .param-controls input[type="number"] {
+      width: 68px;
+      text-align: right;
+      padding: 4px 6px;
+      font-family: monospace;
+    }
+
+    /* Log Drawer */
+    .log-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+    }
+    .log-panel summary {
+      cursor: pointer;
+      font-size: 0.8rem;
+      color: var(--muted);
+      font-weight: 600;
+      user-select: none;
+    }
+    #logBox {
+      margin-top: 10px;
+      background: #090c10;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px;
+      height: 150px;
+      overflow-y: auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      white-space: pre-wrap;
+    }
+    .hint-banner {
+      font-size: 0.78rem;
+      color: var(--muted);
+      background: rgba(56, 189, 248, 0.07);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+    .color-swatch {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      background: none;
+      padding: 2px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand">
+      <span class="brand-badge">MK-300</span>
+      <div>
+        <h1>mk300ctl Web Edit</h1>
+        <p>Alternativa Open Source ao M-EFCS (Protocolo BLE AE40 + MIDI)</p>
+      </div>
+    </div>
+
+    <div class="conn-bar">
+      <div id="statusPill" class="status-pill">
+        <span class="status-dot"></span>
+        <span id="statusText">Desconectado (Modo Demo)</span>
+      </div>
+      <button id="btnWebBle" class="primary" onclick="connectWebBluetooth()">
+        🔹 Conectar (Web Bluetooth)
+      </button>
+      <button id="btnLocalBridge" class="BridgeBtn" style="display:none" onclick="connectLocalBridge()">
+        🐧 Conectar via Ponte Local (Bleak)
+      </button>
+      <button id="btnDisconnect" class="danger" style="display:none" onclick="disconnectDevice()">
+        Desconectar
+      </button>
+      <button id="btnRefresh" onclick="refreshFromPedal()" disabled title="Reler buffer atual do pedal">
+        ↻ Atualizar
+      </button>
+      <button id="btnSyncNames" onclick="syncNamesFromPedal()" disabled title="Ler os nomes dos 160 presets, AMPs, CABs e DS da memória do pedal">
+        📥 Sincronizar Nomes
+      </button>
+    </div>
+  </header>
+
+  <div class="hint-banner" id="linuxHint">
+    💡 <strong>Dica no Linux (Ubuntu):</strong> No Chrome/Brave/Edge, ative <code>chrome://flags/#enable-experimental-web-platform-features</code> para usar <strong>Web Bluetooth</strong> direto no navegador, ou rode <code>./mk300_web.py</code> no terminal para conectar via <strong>Ponte Local (Bleak)</strong> (que desconecta o BlueZ/ALSA automaticamente). Você também pode abrir/editar arquivos <code>.bin</code> offline!
+  </div>
+
+  <!-- PRESET BAR -->
+  <section class="preset-panel">
+    <div class="preset-selector-group">
+      <div id="presetBadge" class="preset-num-badge">001</div>
+      <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
+        <div style="display:flex; gap:6px;">
+          <button onclick="stepPreset(-1)">◀ Ant</button>
+          <select id="presetSelect" style="flex:1;" onchange="selectPreset(Number(this.value))"></select>
+          <button onclick="stepPreset(1)">Próx ▶</button>
+        </div>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <input id="presetNameInput" type="text" maxlength="19" placeholder="Nome do Preset" style="flex:1;" onchange="updatePresetName(this.value)" />
+          <input id="presetColorInput" type="color" class="color-swatch" title="Cor do LED do Preset" onchange="updatePresetColor(this.value)" />
+        </div>
+      </div>
+    </div>
+
+    <div class="global-knobs">
+      <div class="field-group">
+        <label><span>Volume</span><strong id="lblVol">70</strong></label>
+        <input id="rngVol" type="range" min="0" max="100" value="70" oninput="onGlobalSlider('vol', Number(this.value))" />
+      </div>
+      <div class="field-group">
+        <label><span>BPM</span><strong id="lblBpm">120</strong></label>
+        <input id="rngBpm" type="range" min="40" max="240" value="120" oninput="onGlobalSlider('bpm', Number(this.value))" />
+      </div>
+      <div class="field-group">
+        <label><span>Pan</span><strong id="lblPan">0</strong></label>
+        <input id="rngPan" type="range" min="-100" max="100" value="0" oninput="onGlobalSlider('pan', Number(this.value))" />
+      </div>
+    </div>
+
+    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end;">
+      <button onclick="downloadPatchBin()">💾 Baixar .bin (448B)</button>
+      <label style="cursor:pointer;">
+        <input type="file" accept=".bin" style="display:none" onchange="loadPatchBinFile(event)" />
+        <span style="display:inline-flex; align-items:center; gap:6px; background:var(--panel-2); border:1px solid var(--border); border-radius:8px; padding:7px 12px; font-size:0.85rem; font-weight:600;">📂 Carregar .bin</span>
+      </label>
+    </div>
+  </section>
+
+  <!-- SIGNAL CHAIN -->
+  <section class="chain-panel">
+    <div class="panel-header">
+      <span class="panel-title">Cadeia de Sinal (Clique em um módulo para editar os knobs • Use ◀ ▶ para reordenar)</span>
+      <span style="font-size:0.78rem; color:var(--muted);">Alterações vão para o buffer ao vivo (LED SAVE piscando no pedal)</span>
+    </div>
+    <div id="chainStrip" class="chain-strip"></div>
+  </section>
+
+  <!-- MODULE EDITOR -->
+  <section class="editor-panel">
+    <div class="module-toolbar">
+      <div class="module-title-wrap">
+        <span id="modBadge" class="module-badge">AMP</span>
+        <button id="btnModPower" onclick="toggleSelectedModule()">ON</button>
+        <div style="display:flex; align-items:center; gap:8px;">
+          <label for="modTypeSelect" style="font-size:0.82rem; color:var(--muted); font-weight:600;">Modelo / Tipo:</label>
+          <select id="modTypeSelect" onchange="changeModuleType(Number(this.value))" style="min-width:210px;"></select>
+        </div>
+      </div>
+      <span id="modRawInfo" style="font-size:0.78rem; color:var(--muted); font-family:monospace;"></span>
+    </div>
+
+    <div id="paramsGrid" class="params-grid"></div>
+  </section>
+
+  <!-- PROTOCOL LOG -->
+  <details class="log-panel">
+    <summary>Console de Protocolo BLE AE40 (TX / RX)</summary>
+    <div id="logBox"></div>
+  </details>
+
+  <footer style="text-align:center; font-size:0.78rem; color:var(--muted); padding:6px 0;">
+    Projeto open-source <a href="https://github.com/rafaelsupport/mk300ctl" target="_blank" style="color:var(--accent); text-decoration:none;">mk300ctl</a> •
+    Interface Web inspirada em <a href="https://github.com/jvsobrinho/mvave-blackbox-edit" target="_blank" style="color:var(--accent); text-decoration:none;">jvsobrinho/mvave-blackbox-edit</a>
+  </footer>
+
+<script>
+// ============================================================================
+// Catálogo e Constantes do Protocolo AE40 (M-Vave MK-300)
+// ============================================================================
+const SERVICE_AE40 = "0000ae40-0000-1000-8000-00805f9b34fb";
+const CHAR_WR      = "0000ae41-0000-1000-8000-00805f9b34fb";
+const CHAR_NT      = "0000ae42-0000-1000-8000-00805f9b34fb";
+const SERVICE_MIDI = "03b80e5a-ede8-4b33-a751-6ce34ec4c700";
+
+const MODS = ["WAH", "FX", "GATE", "DS", "AMP", "CAB", "EQ", "MOD", "DLY", "REV", "VOL"];
+const TYPE_MEM  = 0x04;
+const TYPE_RES  = 0x05;
+const ADDR_BUF  = 0x10000000;
+const ADDR_GLOB = 0x20000000;
+const ADDR_SW   = 0xE0000000;
+const ADDR_PRESET_NAMES = 0x70200000;
+const PATCH_SIZE = 448;
+const READ_CHUNK = 1000;
+
+const OFF_NAME  = 0;
+const OFF_COLOR = 20;
+const OFF_VOL   = 24;
+const OFF_BPM   = 26;
+const OFF_PAN   = 28;
+const OFF_CHAIN = 32;
+const OFF_EN    = 43;
+const OFF_UNIT  = 54;
+const OFF_PARA  = 66;
+const PARAMS_PER_MOD = 12;
+
+const CATALOG_TYPES = {
+  WAH: ["X-Wah", "Funk-Wah", "Slide-Wah", "Cry-Wah", "Wah-Wah", "Sense-Wah"],
+  FX: ["Wah-Wah", "Lofi", "Sense-Wah", "Boost", "A Boost", "E Boost", "B Boost", "Boost ED",
+       "Compress", "Compress Pro", "F Compress", "Pitch", "Octave", "Ring", "Pitch shifter", "Whammy"],
+  GATE: ["AI Gate", "Soft Gate", "Hard Gate", "Pro Gate", "Compress", "Compress Pro", "F Compress", "AI Ms Gate"],
+  DS: ["BLUES_OD","TS8","DS1","DS2","M-VAVE_OD","M-VAVE_DS","M-VAVE_TS1","M-VAVE_TS2","SUPA_1","SUPA_2",
+       "RAT","RAT_BT","JHS_1","JHS_2","MT_1","MT_2","TDS","XC_DS","QC_DS","HIGAIN",
+       "M-BOOSTER","TS-9","BIG-DR","CL_BOOST","BD","M90S","M2000","DS800","DS900","MAR-DS",
+       "BOG_DS","SONDO","MID-BOST","RED_DS","MODEN_DS","SuperOD","BLUES_DR","Black-BOX","BIG-MUFF","PLX"],
+  AMP: ["J120_CL","J900_OD","J900_DS","J900_HV","M_BLUES","HORIZON","M-VAVE_DS","ROOM40","FD1_BR","JOY_OD",
+        "M-VAVE_TS3","MT100_LEAD","RAT_CL","RAT_CR","RAT_DS","MES_RED","FD_CH1","FD_CH1_HOT","MT80_CL","M_SUPER_OD",
+        "J800_CL_1960","J800_CL_AMP","J800_OD","J800_DS","JOHNS_CH1","DARK_OD","DARK_OD2","DARK_DS","VXO_CL","VXO_OD",
+        "VXO_OD2","VXO_OD3","OR_CL","OR_CRUNCH","HIGIAN","HIGIAN_RED","COOL_CL","JVMcrunch","JV410_BOOST","AXE",
+        "MES_CH1","M-VAVE_DS3","M-VAVE_DS4","M-VAVE_LEAD","LANY_CH1","LANY_CH1_BR","LANY_CH2_OD","LANY_CH3_DS","ROLANS_CL","ROLANS_DS",
+        "ROLANS_TDS","BOOSS_METEL","J900_CH1","J900_CH2","JVM_OD_FG","JVM_DS_FG","RADAL_CL_FG","RADAL_DS","RADAL_TDS","RADAL_HDS",
+        "DUMBLE_FG","JAZZ_OD","M-VAVE_TS1","M-VAVE_TS2","EHV5150_CH1","EHV5150_CH2","EHV5150_DS","EHV5150_MT","XC_CL","XC_OD",
+        "XC_DS","XC_HV","J2000_CL_FG","J2000_CR_FG","J2000_TR_FG","J2000_DS_FG","J900_CL_57","J900_DS_57","MAR_METEL","MAR_HV",
+        "WS_JZCL_57","OR_CL_ECM","OR_CRUNCH","OR_SWEET","BOG_LEAD","BOG_LEAD2","BOG_LEAD3","BOG_SOLO","MATTER_DS","UK_DS",
+        "JHS_DS","JHS_TDS","M-VAVE_HOT","M-VAVE_RED","M-VAVE_MT","M-VAVE_BST","MES_CH2_57","MES_CH2_AMP","MES_CH3_57","MES_CH3_AM",
+        "AgDb750_BS","ApSVT_BS","DgM900_BS","FenRum_BS","GkF550_BS","HkeHd50_BS","MarkLm_BS","OrgAd_BS","PjBuddy_BS","RolDb_BS",
+        "Mb400C1_BS","Mb400C2_BS","DgXu_BS","ApSp_BS","Mar50_BS","Mark500_BS","PjbCub_BS","Tc21Vt_BS","WatMod_BS","GKL800_BS"],
+  CAB: ["1AC-SeVin","2JVM_1960_57","3JVM_G12_ECM","4DELUXE REV","5BOG_57","6FD120_7B","7HESS_212DM","8HESS_212VTY","9HIW412SWF","10MAR1960_412",
+        "11MESA_412_57","12MESA_412_EC","13WANGS112_EC","14WANGS212_EC","15V30_MC834","16V30_MD421","17VOX_AC30","18FD_TW1971","19FD_TW1980","20FD_TW1988",
+        "21FD_TW2000","22M160_Center","23MD421_Cente","24Chug_L","25Chug_R","26EV_MIX_B","27G12-EVH","28G12-EVH_CT","29G12-EVH_i5","30G12-EVH_m16",
+        "31Marshall_Bo","32BGN412V30","33MESA_LS","34MESA_CS","35MESA_HS","36Recto_112","37FRMAN112","38OR_112","39HIFI_OK","40Ranll_412",
+        "41OR_V30_212","42OR_G75_212","43RE_SUPER_41","44EGNL01_412","45EGNL02_412","46EGNL03_412","47MeOSick-II","48MeOSick-III","49MesaOSick-I","50SoldHor",
+        "51SoldSC412","52AC-SeTV20","53Pey5150","54MRSH03","55VA5153","56AC-EmG212","57AC-Se210","58CeleAt","59AC-SeGol","60AC-CateEx",
+        "61AC-CateFw","62DieV30","63EAGLProV30s","64Sperimental","65Peavey115","66Peavey112","67VxAc15","68FimanVt","69FenDeluX","70FenProJ",
+        "71Alton212","72OgP412","73OgV30","74HaBtonV","75MarMfour","76Elctrovoice","77J120Rolnd","78MessOS","79Mar60AV","80WS212_57",
+        "81Agula410","82AmpgSVT410","83AmpgSVT810","84AshB115","85Bareface110","86Bstert115","87DavEendD410","88DgD210C","89DgDG212N","90FdBman410",
+        "91FdBmanSf210","92GKRB410A","93GKRB410B","94Hark410","95MbSubway210","96OgOBC212","97Pey115","98RanRB100","99SR115","100Tace412"],
+  EQ: ["Guitar EQ 6", "Bass EQ 7", "Normal EQ 10"],
+  MOD: ["Chorus", "Tri Chorus", "Flanger", "Tri Flanger", "Tremolo", "Tri Tremolo", "Opto Tremolo",
+        "Phaser", "Vibrato", "Tri Vibrato", "Opto Vibrato", "Univibe", "Tri Univibe", "Autofilter",
+        "Phaser Stereo", "Flanger Stereo", "Vibe Stereo", "Chorus Stereo", "Tremolo Stereo", "Vibrato Stereo"],
+  DLY: ["Clean", "Modern", "Echo", "Analog", "Duck", "Dtype", "Tremolo", "Filter", "Dual", "Lofi",
+        "Pattern", "Ice", "Reverse", "PingPong Stereo", "Clean Stereo", "Modern Stereo", "Echo Stereo",
+        "Analog Stereo", "Duck Stereo", "Dtype Stereo", "Tremolo Stereo", "Filter Stereo", "Dual Stereo",
+        "Lofi Stereo", "Pattern Stereo", "Ice Stereo", "Reverse Stereo"],
+  REV: ["Room", "Hall", "Plate", "Spring", "Shimmer", "Bloom", "Cloud", "Lofi", "Swell",
+        "Room stereo", "Hall stereo", "Plate stereo", "Spring stereo", "Shimmer stereo",
+        "Bloom stereo", "Cloud stereo", "Lofi stereo", "Swell stereo"],
+  VOL: ["Volume"]
+};
+
+const DEFAULT_PRESET_NAMES = [
+  "JM-CL","JM-OD","JM-DS","JM-SOLO","M-VAVE-CL","M-VAVE-DS","M-VAVE-SOLO","M-VAVE-SOLO2",
+  "CL_CHORUS","TEAR","FUNK","Happy-Play","MT-CLEAN","MT-GO!","RHYTHM","RHYTHM2",
+  "FD_CH1-FULL_RIG","JAZZ-CL_FULLRIG","J900-CL_FULL-RIG","OR_CRUNCH","WAH WAH","WARM_OD","SWEET-SOLO","CD ROCK",
+  "LANY-CH1","LANY-CH2","LANY-SOLO","LANY-SOLO2","WAHAHA","CL-SOLO","JVM-OD FULL-RIG","Baby-Sleep",
+  "ROCK","HARD-ROCK","HV-ROCK","MARS FULL-RIG-5","Pop-CL","Pop-OD","Pop-OD2","Pop-SOLO",
+  "CLASSICAL","JC120-CHORUS","JC120-VB","OR-OD","MESA-1","MESA-2","MESA-3","MESA-4",
+  "SOLO-1","SOLO-2","SOLO-3","SOLO-4","Modern-DS","Vintage-DS","Flanger","WAH-OH!",
+  "Superman","It's me!","I LOVE YOU","Ringtone","Acoustic Guitar1","Acoustic Guitar2","Acoustic Guitar3","Acoustic Guitar4",
+  "CL-1","CL-2","CL-3","CL-4","VOX-OD","VOX-OD2","Death","Ghoth",
+  "AG BASS","AP BASS","21 BASS","DG BASS","OG BASS","MA BASS","DG BASS","FD BASS"
+];
+while (DEFAULT_PRESET_NAMES.length < 160) {
+  DEFAULT_PRESET_NAMES.push(`USER PRESET ${DEFAULT_PRESET_NAMES.length + 1}`);
+}
+
+const PARAM_NAMES = {
+  "AMP:*": ["Gain", "Level", "Bass", "Middle", "Treble", "Reso", "Pres", "Bright"],
+  "CAB:*": ["Level", "LowCut", "HighCut"],
+  "DS:*": ["Gain", "Tone", "Level"],
+  "FX:3": ["Gain", "Level"],
+  "DLY:0": ["Time", "Fb", "Mix", "Sync"],
+  "DLY:*": ["Time", "Fb", "Mix", "Sync"],
+  "REV:10": ["Decay", "Mix", "HighPass", "LowPass", "ModDepth"],
+  "REV:*": ["Decay", "Mix", "HighPass", "LowPass", "ModDepth"],
+  "VOL:*": ["Volume"],
+  "WAH:0": ["Value", "Gain", "Level"],
+  "WAH:1": ["Value", "Gain", "Level"],
+  "WAH:2": ["Value", "Gain", "Level"],
+  "WAH:3": ["Value", "Gain", "Level"],
+  "WAH:4": ["Speed", "Q", "Mix", "Width", "Level", "Sync"],
+  "WAH:5": ["Sense", "Attack", "Q", "fPeak", "Mix", "Width", "Level"],
+  "GATE:0": ["Gate", "Bias", "Detect"],
+  "GATE:7": ["Gate", "Bias", "Detect"],
+  "GATE:1": ["Thd", "Detect"],
+  "GATE:2": ["Thd", "Detect"],
+  "GATE:3": ["Att", "Rel", "Thd", "Kw", "Ratio", "Detect"],
+  "GATE:4": ["Sustain", "Attack", "Level", "Blend", "Detect"],
+  "GATE:5": ["Ratio", "Gain", "Knee", "Thd", "Attack", "Level", "Blend", "Detect"],
+  "GATE:6": ["Ratio", "Gain", "Knee", "Thd", "Attack", "Tone", "Level", "Blend", "Detect"],
+  "EQ:0": ["100Hz", "200Hz", "400Hz", "800Hz", "1.6kHz", "3.2kHz"],
+  "EQ:1": ["50Hz", "120Hz", "400Hz", "500Hz", "800Hz", "4.5kHz", "10kHz"],
+  "EQ:2": ["31Hz", "62Hz", "125Hz", "250Hz", "500Hz", "1kHz", "2kHz", "4kHz", "8kHz", "16kHz"],
+  "MOD:0": ["Speed", "Depth", "Mix", "Sync"],
+  "MOD:1": ["Speed", "Depth", "Mix", "Sync"],
+  "MOD:2": ["Speed", "Depth", "Fb", "Mix", "Sync"],
+  "MOD:3": ["Speed", "Depth", "Fb", "Mix", "Sync"],
+  "MOD:4": ["Speed", "Depth", "Level", "Sync"],
+  "MOD:5": ["Speed", "Depth", "Level", "Sync"],
+  "MOD:6": ["Speed", "Depth", "Level", "Sync"],
+  "MOD:7": ["Speed", "MidCut", "Reso", "Fb", "Sync"],
+  "MOD:8": ["Speed", "Depth", "Sync"],
+  "MOD:9": ["Speed", "Depth", "Sync"],
+  "MOD:10": ["Speed", "Depth", "Sync"],
+  "MOD:11": ["Speed", "Depth", "Mix", "Sync"],
+  "MOD:12": ["Speed", "Depth", "Mix", "Sync"],
+  "MOD:13": ["Speed", "Min", "Max", "Mix", "Fb", "Sync"],
+  "MOD:14": ["Speed", "Stage", "Regen", "Mix", "Lfo", "Sync"],
+  "MOD:15": ["Speed", "Depth", "Regen", "Mix", "Jet", "Lfo", "Sync"],
+  "MOD:16": ["Speed", "Stage", "Regen", "Mix", "Lfo", "Sync"],
+  "MOD:17": ["Speed", "Depth", "Mode", "Mix", "Sync"],
+  "MOD:18": ["Speed", "Depth", "Level", "Mode", "Sync"],
+  "MOD:19": ["Speed", "Depth", "Bits", "Mix", "Sync"]
+};
+
+function getParamNames(mod, t) {
+  return PARAM_NAMES[`${mod}:${t}`] || PARAM_NAMES[`${mod}:*`] || null;
+}
+
+// ============================================================================
+// Estado da Aplicação
+// ============================================================================
+let patchBuf = new Uint8Array(PATCH_SIZE);
+let currentPresetIdx = 0;
+let selectedModIdx = 4; // Começa no AMP
+let presetNames = [...DEFAULT_PRESET_NAMES];
+let customTypes = {
+  AMP: [...CATALOG_TYPES.AMP],
+  CAB: [...CATALOG_TYPES.CAB],
+  DS:  [...CATALOG_TYPES.DS]
+};
+
+// Estado de conexão ("none" | "webble" | "bridge")
+let connMode = "none";
+let bleDevice = null;
+let bleWriteChar = null;
+let bleNotifyChar = null;
+let rxChunks = [];
+let rxWaiters = [];
+let txQueue = Promise.resolve();
+let sliderTimers = {};
+
+function initDemoPatch() {
+  patchBuf.fill(0);
+  const name = "JM-CL";
+  for (let i = 0; i < name.length; i++) patchBuf[i] = name.charCodeAt(i);
+  const dv = new DataView(patchBuf.buffer);
+  dv.setUint32(OFF_COLOR, 0x38bdf8, true);
+  dv.setUint16(OFF_VOL, 75, true);
+  dv.setUint16(OFF_BPM, 120, true);
+  dv.setInt16(OFF_PAN, 0, true);
+  for (let i = 0; i < 11; i++) patchBuf[OFF_CHAIN + i] = i;
+  // Liga GATE, AMP, CAB, DLY, REV como demo
+  [2, 4, 5, 8, 9].forEach(i => patchBuf[OFF_EN + i] = 1);
+  // Valores demo do AMP
+  const ampBase = OFF_PARA + 4 * PARAMS_PER_MOD * 2;
+  [55, 70, 50, 60, 65, 50, 55, 0].forEach((v, idx) => dv.setInt16(ampBase + idx * 2, v, true));
+}
+
+function logMsg(msg) {
+  const box = document.getElementById("logBox");
+  const t = new Date().toLocaleTimeString();
+  box.textContent += `[${t}] ${msg}\n`;
+  box.scrollTop = box.scrollHeight;
+}
+
+function toHex(u8, max = 48) {
+  const slice = u8.length > max ? u8.subarray(0, max) : u8;
+  const s = Array.from(slice).map(b => b.toString(16).padStart(2, "0")).join(" ");
+  return u8.length > max ? `${s} … (${u8.length}B)` : s;
+}
+
+// ============================================================================
+// Frame & Protocolo AE40 (Web Bluetooth + Local Bridge)
+// ============================================================================
+function buildFrame(cmd, payload = new Uint8Array(0)) {
+  const n = payload.length;
+  let sum = 0;
+  for (let i = 0; i < n; i++) sum += payload[i];
+  const cks = (~sum) & 0xFF;
+  const out = new Uint8Array(7 + n);
+  out[0] = 0x00;
+  out[1] = 0x59;
+  out[2] = cmd;
+  out[3] = n & 0xFF;
+  out[4] = (n >> 8) & 0xFF;
+  out[5] = (n >> 16) & 0xFF;
+  out.set(payload, 6);
+  out[6 + n] = cks;
+  return out;
+}
+
+function concatUint8(chunks) {
+  const total = chunks.reduce((acc, c) => acc + c.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const c of chunks) {
+    out.set(c, off);
+    off += c.length;
+  }
+  return out;
+}
+
+function onBleNotify(event) {
+  const val = new Uint8Array(event.target.value.buffer, event.target.value.byteOffset, event.target.value.byteLength);
+  rxChunks.push(val);
+  while (rxWaiters.length > 0) {
+    const w = rxWaiters[0];
+    const acc = concatUint8(rxChunks);
+    const frameLen = acc.length >= 6 ? 7 + (acc[3] | (acc[4] << 8) | (acc[5] << 16)) : Infinity;
+    if (acc.length >= w.minlen && acc.length >= frameLen) {
+      rxWaiters.shift();
+      rxChunks = [];
+      w.resolve(acc);
+    } else {
+      break;
+    }
+  }
+}
+
+function xferWebBle(pkt, minlen) {
+  const run = async () => {
+    rxChunks = [];
+    logMsg(`TX ${toHex(pkt)}`);
+    const waitPromise = new Promise((resolve, reject) => {
+      const timer = setTimeout(() => {
+        rxWaiters = rxWaiters.filter(w => w.resolve !== resolve);
+        reject(new Error("Timeout aguardando resposta BLE (5s)"));
+      }, 5000);
+      rxWaiters.push({
+        minlen,
+        resolve: (data) => {
+          clearTimeout(timer);
+          resolve(data);
+        }
+      });
+    });
+    await bleWriteChar.writeValueWithoutResponse(pkt);
+    const resp = await waitPromise;
+    logMsg(`RX ${toHex(resp)}`);
+    return resp;
+  };
+  txQueue = txQueue.then(run, run);
+  return txQueue;
+}
+
+async function pedalRead(addr, size, typ = TYPE_MEM) {
+  if (connMode === "bridge") {
+    const r = await fetch(`/api/read?addr=${addr}&size=${size}&typ=${typ}`);
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Erro na leitura via ponte local");
+    return Uint8Array.from(atob(j.data), c => c.charCodeAt(0));
+  }
+  if (connMode !== "webble") return null;
+
+  if (size > READ_CHUNK) {
+    const parts = [];
+    for (let off = 0; off < size; off += READ_CHUNK) {
+      const chunk = Math.min(READ_CHUNK, size - off);
+      parts.push(await pedalRead(addr + off, chunk, typ));
+    }
+    return concatUint8(parts);
+  }
+  const p = new Uint8Array(8);
+  const dv = new DataView(p.buffer);
+  p[0] = typ;
+  dv.setUint32(1, addr >>> 0, true);
+  p[5] = size & 0xFF;
+  p[6] = (size >> 8) & 0xFF;
+  p[7] = (size >> 16) & 0xFF;
+  const resp = await xferWebBle(buildFrame(0x23, p), 15);
+  if (resp[2] !== 0x23) throw new Error(`Leitura recusada em 0x${addr.toString(16)}`);
+  return resp.slice(14, 14 + size);
+}
+
+async function pedalWrite(addr, bytes, typ = TYPE_MEM) {
+  const data = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  if (connMode === "bridge") {
+    const b64 = btoa(String.fromCharCode(...data));
+    const r = await fetch(`/api/write`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ addr, data: b64, typ })
+    });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Erro na escrita via ponte local");
+    return;
+  }
+  if (connMode !== "webble") return;
+
+  const p = new Uint8Array(8 + data.length);
+  const dv = new DataView(p.buffer);
+  p[0] = typ;
+  dv.setUint32(1, addr >>> 0, true);
+  p[5] = data.length & 0xFF;
+  p[6] = (data.length >> 8) & 0xFF;
+  p[7] = (data.length >> 16) & 0xFF;
+  p.set(data, 8);
+  const resp = await xferWebBle(buildFrame(0x22, p), 8);
+  if (!(resp[2] === 0 && resp[6] === 0)) {
+    throw new Error(`Escrita recusada em 0x${addr.toString(16)}`);
+  }
+}
+
+// ============================================================================
+// Conexão Web Bluetooth e Ponte Local
+// ============================================================================
+async function connectWebBluetooth() {
+  if (!navigator.bluetooth) {
+    alert("Seu navegador não expõe a Web Bluetooth API.\n\nUse Chrome, Brave ou Edge (em chrome://flags/#enable-experimental-web-platform-features no Linux), ou rode ./mk300_web.py para usar a Ponte Local.");
+    return;
+  }
+  try {
+    logMsg("Procurando MK-300 via Web Bluetooth...");
+    bleDevice = await navigator.bluetooth.requestDevice({
+      filters: [
+        { services: [SERVICE_AE40] },
+        { services: [SERVICE_MIDI] },
+        { namePrefix: "MK" },
+        { namePrefix: "M-VAVE" }
+      ],
+      optionalServices: [SERVICE_AE40, SERVICE_MIDI]
+    });
+    bleDevice.addEventListener("gattserverdisconnected", onDisconnected);
+    logMsg(`Conectando a ${bleDevice.name || bleDevice.id}...`);
+    const server = await bleDevice.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_AE40);
+    bleWriteChar = await service.getCharacteristic(CHAR_WR);
+    bleNotifyChar = await service.getCharacteristic(CHAR_NT);
+    await bleNotifyChar.startNotifications();
+    bleNotifyChar.addEventListener("characteristicvaluechanged", onBleNotify);
+
+    connMode = "webble";
+    const hs = await xferWebBle(buildFrame(0x11), 7);
+    const len = hs[3] | (hs[4] << 8) | (hs[5] << 16);
+    const model = new TextDecoder().decode(hs.slice(6, 6 + len)).split("\0")[0];
+    setConnectedUI(`Conectado via Web BLE (${model})`);
+    await refreshFromPedal();
+  } catch (err) {
+    logMsg(`Erro Web Bluetooth: ${err.message}`);
+    alert(`Não foi possível conectar via Web Bluetooth:\n${err.message}`);
+  }
+}
+
+async function connectLocalBridge() {
+  try {
+    setStatusText("Conectando via Ponte Local (Bleak)...");
+    logMsg("Solicitando conexão BLE ao servidor Python local...");
+    const r = await fetch("/api/connect", { method: "POST" });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || "Falha ao conectar");
+    connMode = "bridge";
+    setConnectedUI(`Conectado via Bleak (${j.model})`);
+    await refreshFromPedal();
+  } catch (err) {
+    setStatusText("Desconectado (Modo Demo)");
+    logMsg(`Erro Ponte Local: ${err.message}`);
+    alert(`Falha ao conectar à MK-300 via Ponte Local:\n${err.message}`);
+  }
+}
+
+async function disconnectDevice() {
+  if (connMode === "webble" && bleDevice && bleDevice.gatt.connected) {
+    bleDevice.gatt.disconnect();
+  } else if (connMode === "bridge") {
+    await fetch("/api/disconnect", { method: "POST" }).catch(() => {});
+    onDisconnected();
+  }
+}
+
+function onDisconnected() {
+  connMode = "none";
+  const pill = document.getElementById("statusPill");
+  pill.classList.remove("connected");
+  setStatusText("Desconectado (Modo Demo)");
+  document.getElementById("btnDisconnect").style.display = "none";
+  document.getElementById("btnRefresh").disabled = true;
+  document.getElementById("btnSyncNames").disabled = true;
+  logMsg("Desconectado da MK-300.");
+}
+
+function setStatusText(txt) {
+  document.getElementById("statusText").textContent = txt;
+}
+
+function setConnectedUI(label) {
+  const pill = document.getElementById("statusPill");
+  pill.classList.add("connected");
+  setStatusText(label);
+  document.getElementById("btnDisconnect").style.display = "inline-flex";
+  document.getElementById("btnRefresh").disabled = false;
+  document.getElementById("btnSyncNames").disabled = false;
+}
+
+// ============================================================================
+// Leitura / Escrita de Alto Nível
+// ============================================================================
+async function refreshFromPedal() {
+  if (connMode === "none") return;
+  try {
+    const glob = await pedalRead(ADDR_GLOB, 2);
+    currentPresetIdx = glob[1];
+    const buf = await pedalRead(ADDR_BUF, PATCH_SIZE);
+    patchBuf.set(buf);
+    renderAll();
+    logMsg(`Preset [${String(currentPresetIdx + 1).padStart(3, "0")}] carregado (${PATCH_SIZE} bytes).`);
+  } catch (err) {
+    logMsg(`Erro ao atualizar: ${err.message}`);
+  }
+}
+
+async function syncNamesFromPedal() {
+  if (connMode === "none") return;
+  const btn = document.getElementById("btnSyncNames");
+  btn.disabled = true;
+  const origText = btn.textContent;
+  try {
+    const decodeList = (u8, len) => {
+      const out = [];
+      const dec = new TextDecoder("latin1");
+      for (let i = 0; i < u8.length; i += len) {
+        out.push(dec.decode(u8.subarray(i, i + len)).split("\0")[0].trim());
+      }
+      return out;
+    };
+    btn.textContent = "⏳ Lendo Presets...";
+    presetNames = decodeList(await pedalRead(ADDR_PRESET_NAMES, 160 * 17, TYPE_MEM), 17);
+    btn.textContent = "⏳ Lendo CABs...";
+    customTypes.CAB = decodeList(await pedalRead(0x80000000, 100 * 14, TYPE_RES), 14);
+    btn.textContent = "⏳ Lendo AMPs...";
+    customTypes.AMP = decodeList(await pedalRead(0x90000000, 120 * 14, TYPE_RES), 14);
+    btn.textContent = "⏳ Lendo DS...";
+    customTypes.DS = decodeList(await pedalRead(0xA0000000, 40 * 14, TYPE_RES), 14);
+    populatePresetDropdown();
+    renderAll();
+    logMsg("Nomes sincronizados da memória da pedaleira com sucesso!");
+  } catch (err) {
+    logMsg(`Erro ao sincronizar nomes: ${err.message}`);
+    alert(`Erro ao sincronizar nomes: ${err.message}`);
+  } finally {
+    btn.textContent = origText;
+    btn.disabled = (connMode === "none");
+  }
+}
+
+async function selectPreset(idx) {
+  if (idx < 0 || idx > 159) return;
+  currentPresetIdx = idx;
+  document.getElementById("presetSelect").value = String(idx);
+  document.getElementById("presetBadge").textContent = String(idx + 1).padStart(3, "0");
+  if (connMode !== "none") {
+    try {
+      await pedalWrite((ADDR_SW + idx) >>> 0, [1]);
+      await new Promise(r => setTimeout(r, 650));
+      await refreshFromPedal();
+    } catch (e) {
+      logMsg(`Erro ao trocar preset: ${e.message}`);
+    }
+  } else {
+    // Atualiza nome demo no modo offline
+    const name = presetNames[idx] || `PRESET ${idx + 1}`;
+    setPatchString(OFF_NAME, 20, name);
+    renderAll();
+  }
+}
+
+function stepPreset(delta) {
+  const next = (currentPresetIdx + delta + 160) % 160;
+  selectPreset(next);
+}
+
+function setPatchString(off, maxLen, str) {
+  patchBuf.fill(0, off, off + maxLen);
+  const enc = new TextEncoder().encode(str.slice(0, maxLen - 1));
+  patchBuf.set(enc, off);
+}
+
+async function updatePresetName(newName) {
+  setPatchString(OFF_NAME, 20, newName);
+  if (connMode !== "none") {
+    await pedalWrite(ADDR_BUF + OFF_NAME, patchBuf.subarray(OFF_NAME, OFF_NAME + 20));
+  }
+}
+
+async function updatePresetColor(hexStr) {
+  const val = parseInt(hexStr.replace("#", ""), 16) >>> 0;
+  const dv = new DataView(patchBuf.buffer);
+  dv.setUint32(OFF_COLOR, val, true);
+  document.getElementById("presetBadge").style.borderColor = hexStr;
+  document.getElementById("presetBadge").style.color = hexStr;
+  if (connMode !== "none") {
+    await pedalWrite(ADDR_BUF + OFF_COLOR, patchBuf.subarray(OFF_COLOR, OFF_COLOR + 4));
+  }
+}
+
+function onGlobalSlider(which, val) {
+  const dv = new DataView(patchBuf.buffer);
+  let off = OFF_VOL;
+  if (which === "vol") {
+    document.getElementById("lblVol").textContent = val;
+    dv.setUint16(OFF_VOL, val, true);
+    off = OFF_VOL;
+  } else if (which === "bpm") {
+    document.getElementById("lblBpm").textContent = val;
+    dv.setUint16(OFF_BPM, val, true);
+    off = OFF_BPM;
+  } else if (which === "pan") {
+    document.getElementById("lblPan").textContent = val;
+    dv.setInt16(OFF_PAN, val, true);
+    off = OFF_PAN;
+  }
+  debounceWrite(`glob_${which}`, ADDR_BUF + off, patchBuf.subarray(off, off + 2));
+}
+
+async function toggleModule(modIdx, ev) {
+  if (ev) ev.stopPropagation();
+  const cur = patchBuf[OFF_EN + modIdx];
+  const next = cur ? 0 : 1;
+  patchBuf[OFF_EN + modIdx] = next;
+  renderChain();
+  if (modIdx === selectedModIdx) renderModuleEditor();
+  if (connMode !== "none") {
+    await pedalWrite(ADDR_BUF + OFF_EN + modIdx, [next]);
+  }
+}
+
+function toggleSelectedModule() {
+  toggleModule(selectedModIdx);
+}
+
+async function moveChainModule(chainPos, dir, ev) {
+  if (ev) ev.stopPropagation();
+  const targetPos = chainPos + dir;
+  if (targetPos < 0 || targetPos >= 11) return;
+  const a = patchBuf[OFF_CHAIN + chainPos];
+  const b = patchBuf[OFF_CHAIN + targetPos];
+  patchBuf[OFF_CHAIN + chainPos] = b;
+  patchBuf[OFF_CHAIN + targetPos] = a;
+  renderChain();
+  if (connMode !== "none") {
+    await pedalWrite(ADDR_BUF + OFF_CHAIN, patchBuf.subarray(OFF_CHAIN, OFF_CHAIN + 11));
+  }
+}
+
+async function changeModuleType(newTypeIdx) {
+  patchBuf[OFF_UNIT + selectedModIdx] = newTypeIdx & 0xFF;
+  renderChain();
+  renderModuleEditor();
+  if (connMode !== "none") {
+    await pedalWrite(ADDR_BUF + OFF_UNIT + selectedModIdx, [newTypeIdx & 0xFF]);
+  }
+}
+
+function onParamChange(paramIdx, val) {
+  const clamped = Math.max(-32768, Math.min(32767, Math.round(val)));
+  const off = OFF_PARA + selectedModIdx * PARAMS_PER_MOD * 2 + paramIdx * 2;
+  const dv = new DataView(patchBuf.buffer);
+  dv.setInt16(off, clamped, true);
+  const rng = document.getElementById(`rngParam_${paramIdx}`);
+  const num = document.getElementById(`numParam_${paramIdx}`);
+  if (rng && Number(rng.value) !== clamped) rng.value = clamped;
+  if (num && Number(num.value) !== clamped) num.value = clamped;
+  debounceWrite(`param_${selectedModIdx}_${paramIdx}`, ADDR_BUF + off, patchBuf.subarray(off, off + 2));
+}
+
+function debounceWrite(key, addr, slice) {
+  if (connMode === "none") return;
+  clearTimeout(sliderTimers[key]);
+  const copy = new Uint8Array(slice);
+  sliderTimers[key] = setTimeout(() => {
+    pedalWrite(addr, copy).catch(e => logMsg(`Erro escrita: ${e.message}`));
+  }, 60);
+}
+
+// ============================================================================
+// Dump / Load .bin (448 bytes)
+// ============================================================================
+function downloadPatchBin() {
+  const name = getPatchName().replace(/[^a-zA-Z0-9_-]/g, "_") || "preset";
+  const blob = new Blob([patchBuf], { type: "application/octet-stream" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${String(currentPresetIdx + 1).padStart(3, "0")}_${name}.bin`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+async function loadPatchBinFile(ev) {
+  const file = ev.target.files[0];
+  if (!file) return;
+  const buf = new Uint8Array(await file.arrayBuffer());
+  if (buf.length !== PATCH_SIZE) {
+    alert(`Arquivo inválido: esperado ${PATCH_SIZE} bytes, recebido ${buf.length} bytes.`);
+    return;
+  }
+  patchBuf.set(buf);
+  renderAll();
+  logMsg(`Arquivo ${file.name} (${PATCH_SIZE}B) carregado na interface.`);
+  if (connMode !== "none") {
+    await pedalWrite(ADDR_BUF, patchBuf);
+    logMsg("Dump enviado para o buffer de edição ao vivo da MK-300!");
+  }
+}
+
+// ============================================================================
+// Renderização da Interface
+// ============================================================================
+function getPatchName() {
+  return new TextDecoder().decode(patchBuf.subarray(OFF_NAME, OFF_NAME + 20)).split("\0")[0];
+}
+
+function getTypeList(modName) {
+  return customTypes[modName] || CATALOG_TYPES[modName] || [];
+}
+
+function getTypeName(modName, t) {
+  const list = getTypeList(modName);
+  return list[t] || `Tipo #${t}`;
+}
+
+function populatePresetDropdown() {
+  const sel = document.getElementById("presetSelect");
+  sel.innerHTML = "";
+  presetNames.forEach((n, i) => {
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = `[${String(i + 1).padStart(3, "0")}] ${n}`;
+    sel.appendChild(opt);
+  });
+  sel.value = String(currentPresetIdx);
+}
+
+function renderTopBar() {
+  const dv = new DataView(patchBuf.buffer);
+  const name = getPatchName();
+  const colorInt = dv.getUint32(OFF_COLOR, true) & 0xFFFFFF;
+  const hexColor = "#" + colorInt.toString(16).padStart(6, "0");
+  const vol = dv.getUint16(OFF_VOL, true);
+  const bpm = dv.getUint16(OFF_BPM, true);
+  const pan = dv.getInt16(OFF_PAN, true);
+
+  const badge = document.getElementById("presetBadge");
+  badge.textContent = String(currentPresetIdx + 1).padStart(3, "0");
+  badge.style.borderColor = hexColor;
+  badge.style.color = hexColor;
+
+  document.getElementById("presetSelect").value = String(currentPresetIdx);
+  document.getElementById("presetNameInput").value = name;
+  document.getElementById("presetColorInput").value = hexColor;
+
+  document.getElementById("lblVol").textContent = vol;
+  document.getElementById("rngVol").value = vol;
+  document.getElementById("lblBpm").textContent = bpm;
+  document.getElementById("rngBpm").value = bpm;
+  document.getElementById("lblPan").textContent = pan;
+  document.getElementById("rngPan").value = pan;
+}
+
+function renderChain() {
+  const strip = document.getElementById("chainStrip");
+  strip.innerHTML = "";
+  for (let pos = 0; pos < 11; pos++) {
+    const modIdx = patchBuf[OFF_CHAIN + pos] ?? pos;
+    const modName = MODS[modIdx] || `M${modIdx}`;
+    const enabled = patchBuf[OFF_EN + modIdx] !== 0;
+    const unit = patchBuf[OFF_UNIT + modIdx];
+    const modelName = getTypeName(modName, unit);
+
+    const card = document.createElement("div");
+    card.className = `pedal-block ${enabled ? "enabled" : ""} ${modIdx === selectedModIdx ? "selected" : ""}`;
+    card.onclick = () => {
+      selectedModIdx = modIdx;
+      renderChain();
+      renderModuleEditor();
+    };
+
+    card.innerHTML = `
+      <div class="pedal-led"></div>
+      <div class="pedal-name">${modName}</div>
+      <div class="pedal-model" title="${modelName}">${modelName}</div>
+      <button class="pedal-toggle-btn" onclick="toggleModule(${modIdx}, event)">
+        ${enabled ? "ON" : "BYPASS"}
+      </button>
+      <div class="chain-move">
+        <button title="Mover para esquerda" ${pos === 0 ? "disabled" : ""} onclick="moveChainModule(${pos}, -1, event)">◀</button>
+        <button title="Mover para direita" ${pos === 10 ? "disabled" : ""} onclick="moveChainModule(${pos}, 1, event)">▶</button>
+      </div>
+    `;
+    strip.appendChild(card);
+  }
+}
+
+function renderModuleEditor() {
+  const modName = MODS[selectedModIdx];
+  const enabled = patchBuf[OFF_EN + selectedModIdx] !== 0;
+  const unit = patchBuf[OFF_UNIT + selectedModIdx];
+  const types = getTypeList(modName);
+  const pNames = getParamNames(modName, unit);
+
+  document.getElementById("modBadge").textContent = modName;
+  const pwrBtn = document.getElementById("btnModPower");
+  pwrBtn.textContent = enabled ? "🟢 ATIVO (ON)" : "⚪ DESLIGADO (OFF)";
+  pwrBtn.className = enabled ? "BridgeBtn" : "";
+
+  const sel = document.getElementById("modTypeSelect");
+  sel.innerHTML = "";
+  const maxTypes = Math.max(types.length, unit + 1);
+  for (let i = 0; i < maxTypes; i++) {
+    const opt = document.createElement("option");
+    opt.value = String(i);
+    opt.textContent = `${i + 1}. ${types[i] || `Modelo #${i}`}`;
+    sel.appendChild(opt);
+  }
+  sel.value = String(unit);
+
+  document.getElementById("modRawInfo").textContent =
+    `slot=${selectedModIdx} | effunit=${unit} (0x${unit.toString(16).padStart(2, "0")})`;
+
+  const grid = document.getElementById("paramsGrid");
+  grid.innerHTML = "";
+  const dv = new DataView(patchBuf.buffer);
+  const baseOff = OFF_PARA + selectedModIdx * PARAMS_PER_MOD * 2;
+
+  for (let i = 0; i < PARAMS_PER_MOD; i++) {
+    const val = dv.getInt16(baseOff + i * 2, true);
+    const knownName = pNames && pNames[i] ? pNames[i] : null;
+    const card = document.createElement("div");
+    card.className = `param-card ${!knownName && val === 0 ? "unused" : ""}`;
+
+    // Faixa do slider: EQ usa -12..12 ou -50..50, knobs gerais 0..100 (expande se o valor atual for maior, ex: Time em ms)
+    const minVal = Math.min(val < 0 ? -100 : 0, val);
+    const maxVal = Math.max(100, val);
+
+    card.innerHTML = `
+      <div class="param-header">
+        <span>${knownName || `Parâmetro ${i + 1}`}</span>
+        <span class="param-idx">P${i}</span>
+      </div>
+      <div class="param-controls">
+        <input id="rngParam_${i}" type="range" min="${minVal}" max="${maxVal}" value="${val}"
+               oninput="onParamChange(${i}, Number(this.value))" />
+        <input id="numParam_${i}" type="number" value="${val}"
+               onchange="onParamChange(${i}, Number(this.value))" />
+      </div>
+    `;
+    grid.appendChild(card);
+  }
+}
+
+function renderAll() {
+  renderTopBar();
+  renderChain();
+  renderModuleEditor();
+}
+
+// ============================================================================
+// Inicialização
+// ============================================================================
+window.addEventListener("DOMContentLoaded", async () => {
+  initDemoPatch();
+  // Tenta carregar mk300_names.json se estiver disponível no mesmo servidor/repositório
+  try {
+    const r = await fetch("mk300_names.json");
+    if (r.ok) {
+      const j = await r.json();
+      if (Array.isArray(j.presets) && j.presets.length) presetNames = j.presets;
+      if (Array.isArray(j.AMP) && j.AMP.length) customTypes.AMP = j.AMP;
+      if (Array.isArray(j.CAB) && j.CAB.length) customTypes.CAB = j.CAB;
+      if (Array.isArray(j.DS) && j.DS.length) customTypes.DS = j.DS;
+    }
+  } catch (_) {}
+
+  // Verifica se o servidor local mk300_web.py está rodando
+  try {
+    const ping = await fetch("/api/ping");
+    if (ping.ok) {
+      document.getElementById("btnLocalBridge").style.display = "inline-flex";
+      logMsg("Servidor local mk300_web.py detectado! Você pode usar 'Conectar via Ponte Local (Bleak)'.");
+    }
+  } catch (_) {}
+
+  populatePresetDropdown();
+  renderAll();
+});
+</script>
+</body>
+</html>
