@@ -4,6 +4,14 @@ Alternativa open source inicial ao aplicativo **M-EFCS** da **M-Vave** (que ofic
 
 ---
 
+> [!CAUTION]
+> **EXPERIMENTAL PHASE: USE AT YOUR OWN RISK**  
+> This application and project are still under active development/testing (Beta). Communicating directly with the pedal's core memory structures via reverse-engineered protocols interacts intimately with the device's hardware. The author is not responsible for any bricked devices, hardware damage, or data loss. Use this software and the reverse-engineered protocols entirely at your own risk.
+>
+> *(Projeto em fase experimental e de engenharia reversa independente. Não possui vínculo oficial com a M-VAVE. Utilize por sua conta e risco).*
+
+---
+
 ## Motivação
 
 A M-Vave MK-300 utiliza Bluetooth Low Energy (BLE) para comunicação em tempo real com o app oficial **M-EFCS**. Como não há cliente oficial para Linux, este projeto implementa a engenharia reversa do protocolo proprietário **AE40** (leitura/escrita direta de memória de presets e parâmetros) e do **BLE-MIDI**, oferecendo uma ferramenta de linha de comando rápida e scriptável.
